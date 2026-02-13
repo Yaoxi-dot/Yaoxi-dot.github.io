@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>独处生成器 - selfcare </title>
+    <title>独处生成器 - 静态直出版</title>
     <!-- 与 single- friendly.html 保持一致的 html2canvas 版本，提升手机兼容性 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- 撒花效果保留：与 single friendly 3.0 相同的库 -->
@@ -334,54 +334,13 @@
             }).then(canvas => {
                 const dataUrl = canvas.toDataURL('image/png');
 
-                // 简单判断是否为手机端（iOS / Android）
-                const ua = navigator.userAgent || navigator.vendor || window.opera;
-                const isMobile = /Android/i.test(ua) || /iPhone|iPad|iPod/i.test(ua);
-
-                if (isMobile) {
-                    // 在手机上：打开一个带有【点击下载】按钮的页面
-                    const win = window.open('', '_blank');
-                    const html = `
-                        <html>
-                          <head>
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                            <title>保存小票</title>
-                          </head>
-                          <body style="margin:0;padding:20px;background:#fff;display:flex;flex-direction:column;align-items:center;gap:16px;">
-                            <button id="dl" style="padding:10px 18px;font-size:14px;border-radius:999px;border:1px solid #f4a6a6;background:#fef0f3;color:#f26a6a;">
-                              点击下载小票图片
-                            </button>
-                            <img src="${dataUrl}" style="max-width:100%;height:auto;border:1px solid #eee;" />
-                            <script>
-                              document.getElementById('dl').onclick = function () {
-                                var a = document.createElement('a');
-                                a.href = '${dataUrl}';
-                                a.download = '独处计划小票.png';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                              };
-                            <\/script>
-                          </body>
-                        </html>`;
-
-                    if (win && win.document) {
-                        win.document.open();
-                        win.document.write(html);
-                        win.document.close();
-                    } else {
-                        // 如果新窗口被拦截，就直接跳转到图片地址
-                        window.location.href = dataUrl;
-                    }
-                } else {
-                    // 在电脑上：使用 a.download 直接下载
-                    const link = document.createElement('a');
-                    link.download = '独处计划小票.png';
-                    link.href = dataUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }
+                // 统一使用 a.download 的方式触发下载（与 single- friendly.html 一致）
+                const link = document.createElement('a');
+                link.download = '独处计划小票.png';
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             });
         }
 

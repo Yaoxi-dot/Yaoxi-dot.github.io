@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>独处生成器 - 静态直出版</title>
+    <title>独处生成器 self care </title>
     <!-- 与 single- friendly.html 保持一致的 html2canvas 版本，提升手机兼容性 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- 撒花效果保留：与 single friendly 3.0 相同的库 -->
@@ -327,16 +327,29 @@
         function downloadTicket() {
             const el = document.getElementById('ticket-target');
 
-            // 下载方式完全参考 single- friendly.html
             html2canvas(el, {
                 scale: 3,
                 backgroundColor: "#fff",
                 useCORS: true
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = '独处计划小票.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                const dataUrl = canvas.toDataURL('image/png');
+
+                // 简单判断是否为手机端（iOS / Android）
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                const isMobile = /Android/i.test(ua) || /iPhone|iPad|iPod/i.test(ua);
+
+                if (isMobile) {
+                    // 在手机上：直接跳转到图片地址，让浏览器原生预览，用户可长按/菜单保存
+                    window.location.href = dataUrl;
+                } else {
+                    // 在电脑上：使用 a.download 直接下载（保持与 single- friendly.html 一致体验）
+                    const link = document.createElement('a');
+                    link.download = '独处计划小票.png';
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
             });
         }
 

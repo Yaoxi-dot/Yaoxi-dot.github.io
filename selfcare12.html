@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>独处生成器 - 静态直出版</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- 撒花效果保留：与 single friendly 3.0 相同的库 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* --- 基础设置 --- */
+        * { box-sizing: border-box; }
+        
+        body {
+            background-color: #FFF9F5;
+            /* 浅粉色波点背景 */
+            background-image: radial-gradient(#FFD1D1 2px, transparent 2px);
+            background-size: 30px 30px;
+            font-family: "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 40px 15px 150px 15px; /* 底部留大片空白，防止到底部看不见 */
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 页面居中容器 */
+        .container {
+            max-width: 380px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- 1. 机器区域 --- */
+        .machine-section {
+            background: #fff;
+            width: 100%;
+            padding: 40px 30px;
+            border-radius: 30px;
+            text-align: center;
+            /* 阴影 + 彩色边框 */
+            box-shadow: 0 10px 25px rgba(244, 166, 166, 0.35);
+            border: 3px solid #F4A6A6;
+            margin-bottom: 40px; /* 机器和小票之间的距离 */
+            /* 轻微上下抖动动画 */
+            animation: machine-bounce 2.6s ease-in-out infinite;
+        }
+
+        @keyframes machine-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        h1 {
+            color: #F4A6A6;
+            font-size: 2rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            color: #CCC;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        /* 输入框 */
+        .input-item { text-align: left; margin-bottom: 20px; }
+        .input-label { color: #999; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        
+        .slot-display {
+            border: 2px dashed #F8C3C3; /* 粉色虚线 */
+            border-radius: 15px;
+            background: #FAFAFA;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* 生成按钮 */
+        .btn-generate {
+            background: #F4A6A6;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(244, 166, 166, 0.4);
+            margin-top: 15px;
+        }
+        .btn-generate:active { background: #E09090; }
+
+        /* --- 2. 结果区域 (默认 display: none) --- */
+        .result-section {
+            display: none; /* 默认隐藏 */
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 小票样式 (静态) */
+        .ticket-paper {
+            background: #fff;
+            width: 100%;
+            padding: 40px 30px 60px 30px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border-radius: 0; /* 小票方角，去掉遮罩防止被隐藏 */
+        }
+
+        .ticket-header { font-size: 1.4rem; font-weight: 900; color: #222; margin-bottom: 10px; }
+        .ticket-date { font-size: 0.85rem; color: #999; margin-bottom: 25px; }
+        .ticket-line { border-top: 2px dashed #EEE; margin: 25px 0; width: 100%; }
+
+        .ticket-row { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .row-label { color: #BBB; font-size: 0.9rem; letter-spacing: 1px; }
+        .row-val { color: #333; font-weight: bold; font-size: 1rem; }
+
+        .ticket-quote {
+            color: #F4A6A6;
+            font-style: italic;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 35px 0 10px 0;
+            line-height: 1.4;
+        }
+
+        .barcode-wrap {
+            display: flex; justify-content: center; gap: 5px; height: 40px; opacity: 0.15; margin-top: 20px;
+        }
+        .b-line { background: #000; width: 4px; }
+        .b-thin { width: 2px; }
+
+        /* 按钮组 */
+        .btn-group { display: flex; gap: 20px; justify-content: center; }
+        
+        .btn-icon {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            font-size: 1.8rem;
+            color: #555;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { background: #F9F9F9; }
+
+        /* 白噪音控制按钮 */
+        .audio-ctrl {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #999;
+            cursor: pointer;
+            background: #F5F5F5;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.3s;
+        }
+        .audio-ctrl:hover {
+            background: #EEE;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="machine-section">
+            <h1>独处生成器</h1>
+            <div class="subtitle">SOLO DATE GENERATOR</div>
+
+            <div class="input-item">
+                <span class="input-label">EAT 🍰 今天吃点好的</span>
+                <div class="slot-display" id="display-food">🍰 准备中...</div>
+            </div>
+
+            <div class="input-item">
+                <span class="input-label">DO 🛁 享受独处时光</span>
+                <div class="slot-display" id="display-act">🛁 待定中...</div>
+            </div>
+
+            <button class="btn-generate" onclick="generateDate()">✨ 生成独处计划</button>
+
+            <div class="audio-ctrl" onclick="toggleMusic()">
+                <span id="music-status">🔇</span> 白噪音 BGM
+            </div>
+        </div>
+
+        <div class="result-section" id="result-area">
+            
+            <div class="ticket-paper" id="ticket-target">
+                <div class="ticket-header">SOLO DATE TICKET</div>
+                <div class="ticket-date" id="ticket-date">--.--.--</div>
+                
+                <div class="ticket-line"></div>
+                
+                <div class="ticket-row">
+                    <span class="row-label">MENU</span>
+                    <span class="row-val" id="res-food">...</span>
+                </div>
+                
+                <div class="ticket-row">
+                    <span class="row-label">EVENT</span>
+                    <span class="row-val" id="res-act">...</span>
+                </div>
+
+                <div class="ticket-line"></div>
+                
+                <div class="ticket-quote" id="res-quote">...</div>
+
+                <div class="barcode-wrap">
+                    <div class="b-line"></div><div class="b-thin"></div><div class="b-line"></div>
+                    <div class="b-line"></div><div class="b-thin"></div><div class="b-line"></div>
+                    <div class="b-thin"></div><div class="b-line"></div><div class="b-thin"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-icon" onclick="resetAll()" title="重置">🔄</button>
+                <button class="btn-icon" onclick="downloadTicket()" title="保存图片">📥</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="bg-music" loop>
+        <source src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg" type="audio/ogg">
+    </audio>
+
+    <script>
+        // 数据
+        const foods = ["🍰 海盐芝士蛋糕", "🥘 寿喜烧小火锅", "🍗 蜂蜜黄油炸鸡", "🍜 豚骨拉面", "🍢 罗森关东煮", "🍝 黑松露意面", "🍕 榴莲芝士披萨", "🥞 舒芙蕾松饼", "🥗 考伯沙拉"];
+        const acts = ["🛁 泡澡+香薰蜡烛", "🧹 断舍离大扫除", "🎬 投影仪看老电影", "🧩 拼完1000片拼图", "☁️ 去公园看日落", "💌 写给未来的信", "🍷 独酌微醺", "📷 胶片机扫街", "📖 点香薰读完书"];
+        const quotes = ["“爱自己是终身浪漫的开始。”", "“不管几个人，都要记得爱自己。”", "“独处是灵魂的假期。”", "“取悦自己，是头等大事。”", "“做自己的月亮，不为谁发光。”"];
+        const bgMusic = document.getElementById('bg-music');
+
+        function generateDate() {
+            // 1. 滚动动画 (视觉反馈)
+            const dFood = document.getElementById('display-food');
+            const dAct = document.getElementById('display-act');
+            let count = 0;
+            
+            // 隐藏旧结果
+            document.getElementById('result-area').style.display = 'none';
+
+            const timer = setInterval(() => {
+                dFood.innerText = foods[Math.floor(Math.random() * foods.length)];
+                dAct.innerText = acts[Math.floor(Math.random() * acts.length)];
+                count++;
+                
+                if (count > 15) {
+                    clearInterval(timer);
+                    showFinalResult();
+                }
+            }, 50);
+        }
+
+        function showFinalResult() {
+            // 2. 准备数据
+            const f = foods[Math.floor(Math.random() * foods.length)];
+            const a = acts[Math.floor(Math.random() * acts.length)];
+            const q = quotes[Math.floor(Math.random() * quotes.length)];
+            const now = new Date();
+
+            // 填入机器
+            document.getElementById('display-food').innerText = f;
+            document.getElementById('display-act').innerText = a;
+
+            // 填入小票
+            document.getElementById('res-food').innerText = f;
+            document.getElementById('res-act').innerText = a;
+            document.getElementById('res-quote').innerText = q;
+            document.getElementById('ticket-date').innerText = 
+                `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            // 3. 直接显示结果 (display: flex)
+            const resArea = document.getElementById('result-area');
+            resArea.style.display = 'flex';
+
+            // 3.5 撒花效果
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#FFB7B2', '#B5EAD7', '#FF9AA2', '#FFFFFF']
+                });
+            }
+
+            // 4. 滚动到小票位置 (确保看到小票)
+            setTimeout(() => {
+                const ticket = document.getElementById('ticket-target');
+                if (ticket && typeof ticket.scrollIntoView === 'function') {
+                    ticket.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+
+        function resetAll() {
+            document.getElementById('result-area').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => {
+                document.getElementById('display-food').innerText = "🍰 准备中...";
+                document.getElementById('display-act').innerText = "🛁 待定中...";
+            }, 500);
+        }
+
+        function downloadTicket() {
+            const el = document.getElementById('ticket-target');
+            
+            html2canvas(el, {
+                scale: 3, // 高清
+                backgroundColor: "#fff"
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '独处计划小票.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        function toggleMusic() {
+            const status = document.getElementById('music-status');
+            if (bgMusic.paused) {
+                bgMusic.play();
+                status.innerText = "🔊";
+            } else {
+                bgMusic.pause();
+                status.innerText = "🔇";
+            }
+        }
+    </script>
+</body>
+</html>

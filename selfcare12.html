@@ -330,10 +330,36 @@
                 scale: 3, // 高清
                 backgroundColor: "#fff"
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = '独处计划小票.png';
-                link.href = canvas.toDataURL();
-                link.click();
+                const dataUrl = canvas.toDataURL('image/png');
+
+                // 简单判断是否为手机端（iOS / Android）
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                const isMobile = /Android/i.test(ua) || /iPhone|iPad|iPod/i.test(ua);
+
+                if (isMobile) {
+                    // 在手机上：新开页面展示图片，用户长按保存
+                    const win = window.open();
+                    if (win) {
+                        win.document.write(
+                            '<html><head><title>长按保存小票</title></head>' +
+                            '<body style="margin:0;background:#fff;display:flex;align-items:center;justify-content:center;">' +
+                            '<img src="' + dataUrl + '" style="max-width:100%;height:auto;"/>' +
+                            '</body></html>'
+                        );
+                        win.document.close();
+                    } else {
+                        // 如果被拦截，就直接跳转到图片地址
+                        window.location.href = dataUrl;
+                    }
+                } else {
+                    // 在电脑上：使用 a.download 直接下载
+                    const link = document.createElement('a');
+                    link.download = '独处计划小票.png';
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
             });
         }
 

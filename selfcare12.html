@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>独处生成器 </title>
+    <title>独处生成器 selfcare </title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- 撒花效果保留：与 single friendly 3.0 相同的库 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -326,45 +326,16 @@
         function downloadTicket() {
             const el = document.getElementById('ticket-target');
 
-            // 简单判断是否为手机端（iOS / Android）
-            const ua = navigator.userAgent || navigator.vendor || window.opera;
-            const isMobile = /Android/i.test(ua) || /iPhone|iPad|iPod/i.test(ua);
-
-            // 关键点：在用户点击的同步阶段就打开新窗口，避免被手机浏览器当成弹窗拦截
-            let previewWin = null;
-            if (isMobile) {
-                previewWin = window.open('', '_blank');
-            }
-
+            // 下载方式完全参考 single- friendly.html
             html2canvas(el, {
-                scale: 3, // 高清
-                backgroundColor: "#fff"
+                scale: 3,
+                backgroundColor: "#fff",
+                useCORS: true
             }).then(canvas => {
-                const dataUrl = canvas.toDataURL('image/png');
-
-                if (isMobile) {
-                    // 在手机上：用刚刚同步阶段打开的窗口展示图片，用户长按保存
-                    if (previewWin) {
-                        previewWin.document.write(
-                            '<html><head><title>长按保存小票</title><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>' +
-                            '<body style="margin:0;background:#fff;display:flex;align-items:center;justify-content:center;">' +
-                            '<img src="' + dataUrl + '" style="max-width:100%;height:auto;"/>' +
-                            '</body></html>'
-                        );
-                        previewWin.document.close();
-                    } else {
-                        // 如果被拦截，就直接跳转到图片地址
-                        window.location.href = dataUrl;
-                    }
-                } else {
-                    // 在电脑上：使用 a.download 直接下载
-                    const link = document.createElement('a');
-                    link.download = '独处计划小票.png';
-                    link.href = dataUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }
+                const link = document.createElement('a');
+                link.download = '独处计划小票.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
             });
         }
 

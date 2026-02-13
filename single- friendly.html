@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单身致富报告</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- 全局变量 --- */
+        :root {
+            --bg-color: #050505;       /* 极致深黑 */
+            --card-bg: #111;           /* 卡片背景 */
+            --gold: #D4AF37;           /* 香槟金 */
+            --gold-light: #F3E5AB;     /* 浅金（用于高光） */
+            --text-grey: #888;         /* 辅助文字 */
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            border-radius: 0 !important; /* 【核心】去圆角，保持锐利 */
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--gold);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 10px;
+        }
+
+        /* --- 顶部标题 --- */
+        h1 {
+            font-weight: normal;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            color: var(--text-grey);
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gold);
+            padding-bottom: 10px;
+        }
+
+        /* --- 输入区域 --- */
+        .calculator-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 0 10px;
+            margin-bottom: 40px;
+        }
+
+        .input-group { 
+            margin-bottom: 25px; 
+            position: relative;
+        }
+        
+        .input-group label { 
+            display: block; 
+            margin-bottom: 10px; 
+            color: var(--gold); 
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 0;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            color: #fff;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s;
+            font-family: 'Courier New', Courier, monospace; /* 输入数字用等宽字体 */
+        }
+        
+        .input-group input:focus { border-bottom: 1px solid var(--gold); }
+        .input-group input::placeholder { color: #333; font-family: 'Microsoft YaHei'; font-size: 0.9rem;}
+
+        /* --- 按钮 --- */
+        button.action-btn {
+            width: 100%;
+            padding: 18px;
+            background-color: var(--gold);
+            color: #000;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        button.action-btn:hover { background-color: var(--gold-light); }
+
+        /* --- 结果卡片 (重点设计) --- */
+        #result-card {
+            display: none;
+            background-color: #080808;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--gold);
+            position: relative;
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+        }
+
+        /* 顶部装饰线 */
+        #result-card::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px solid #222;
+            pointer-events: none;
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #222;
+        }
+
+        .header-title {
+            font-size: 0.8rem;
+            color: var(--text-grey);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .user-name {
+            font-size: 1.6rem;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* 核心金额区 */
+        .balance-section { margin-bottom: 30px; text-align: center; }
+        .balance-label {
+            font-size: 0.8rem;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+        .balance-amount {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 3.2rem;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: -2px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+        .balance-desc {
+            font-size: 0.8rem;
+            color: var(--text-grey);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* 购买力折算区 */
+        .purchasing-power {
+            margin-top: 25px;
+        }
+        .pp-header {
+            font-size: 0.8rem;
+            color: #fff;
+            background: #222;
+            padding: 5px 12px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        /* 列表项 */
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            border-bottom: 1px dashed #222;
+            padding-bottom: 8px;
+        }
+        .item-row:last-child { border-bottom: none; }
+
+        .item-left { display: flex; flex-direction: column; }
+        .item-name { font-size: 1rem; color: #fff; margin-bottom: 3px;}
+        .item-sub { font-size: 0.75rem; color: #555; }
+        
+        .item-right { text-align: right; }
+        .item-count { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 1.5rem; 
+            color: var(--gold); 
+            font-weight: bold; 
+        }
+        .item-unit { font-size: 0.75rem; color: #555; margin-left: 2px; }
+
+        /* 底部 */
+        .card-footer {
+            margin-top: 30px;
+            border-top: 2px solid var(--gold);
+            padding-top: 15px;
+            text-align: center;
+        }
+        .slogan-main {
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 5px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .slogan-sub {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        /* 下载按钮覆盖样式 */
+        #save-btn {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            max-width: 380px;
+        }
+        #save-btn:hover { background: var(--gold); color: #000; }
+
+    </style>
+</head>
+<body>
+
+    <h1>单身致富计算器</h1>
+
+    <div class="calculator-box">
+        <div class="input-group">
+            <label>👤 您的尊姓大名</label>
+            <input type="text" id="username" placeholder="请输入姓名" maxlength="12">
+        </div>
+        
+        <div class="input-group">
+            <label>💐 鲜花类预算 (元)</label>
+            <input type="number" id="flowers" placeholder="0">
+        </div>
+        <div class="input-group">
+            <label>🍷 晚餐类预算 (元)</label>
+            <input type="number" id="dinner" placeholder="0">
+        </div>
+        <div class="input-group">
+            <label>🎁 礼物类预算 (元)</label>
+            <input type="number" id="gift" placeholder="0">
+        </div>
+        
+        <button class="action-btn" onclick="calculateSavings()">生成我的资产报告</button>
+    </div>
+
+    <div id="result-card">
+        <div class="card-header">
+            <div class="header-title">2025 情人节 · 个人财富审计</div>
+            <div class="user-name" id="display-name">XXX</div>
+        </div>
+
+        <div class="balance-section">
+            <div class="balance-label">今日确认止损资金 (CNY)</div>
+            <div class="balance-amount">¥ <span id="total-amount">0</span></div>
+            <div class="balance-desc">
+                “ 避免了非理性消费风险 ”
+            </div>
+        </div>
+
+        <div class="purchasing-power">
+            <div class="pp-header">资产购买力转化评估</div>
+            
+            <div class="item-row">
+                <div class="item-left">
+                    <span class="item-name">🥤 高端奶茶</span>
+                    <span class="item-sub">液体多巴胺 / 快乐水</span>
+                </div>
+                <div class="item-right">
+                    <span class="item-count" id="tea-count">0</span>
+                    <span class="item-unit">杯</span>
+                </div>
+            </div>
+
+            <div class="item-row">
+                <div class="item-left">
+                    <span class="item-name">🎮 史诗皮肤</span>
+                    <span class="item-sub">永久数字资产</span>
+                </div>
+                <div class="item-right">
+                    <span class="item-count" id="skin-count">0</span>
+                    <span class="item-unit">个</span>
+                </div>
+            </div>
+
+            <div class="item-row">
+                <div class="item-left">
+                    <span class="item-name">🐱 豪华猫罐头</span>
+                    <span class="item-sub">主子膳食投资</span>
+                </div>
+                <div class="item-right">
+                    <span class="item-count" id="cat-count">0</span>
+                    <span class="item-unit">罐</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <div class="slogan-main">智者不入爱河 · 建设美丽生活</div>
+            <div class="slogan-sub">已通过单身贵族资产认证</div>
+        </div>
+    </div>
+
+    <button id="save-btn" class="action-btn" onclick="downloadCard()">保存资产报告</button>
+
+    <script>
+        const PRICE_TEA = 25;
+        const PRICE_SKIN = 88;
+        const PRICE_CAT = 12;
+
+        function calculateSavings() {
+            let nameInput = document.getElementById('username').value.trim();
+            if (!nameInput) nameInput = "神秘首富"; 
+            document.getElementById('display-name').innerText = nameInput;
+
+            let flowers = parseFloat(document.getElementById('flowers').value) || 0;
+            let dinner = parseFloat(document.getElementById('dinner').value) || 0;
+            let gift = parseFloat(document.getElementById('gift').value) || 0;
+
+            let total = flowers + dinner + gift;
+
+            if (total === 0) {
+                alert("格局打开！想象一下如果你有对象，今天要花多少钱？");
+                return;
+            }
+
+            // 格式化金额，加上千位分隔符
+            document.getElementById('total-amount').innerText = total.toLocaleString('zh-CN');
+            
+            document.getElementById('tea-count').innerText = Math.floor(total / PRICE_TEA);
+            document.getElementById('skin-count').innerText = Math.floor(total / PRICE_SKIN);
+            document.getElementById('cat-count').innerText = Math.floor(total / PRICE_CAT);
+
+            let card = document.getElementById('result-card');
+            let btn = document.getElementById('save-btn');
+            
+            card.style.display = 'block';
+            btn.style.display = 'block';
+
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function downloadCard() {
+            const cardElement = document.getElementById('result-card');
+            let fileName = document.getElementById('username').value.trim() || "单身贵族";
+            
+            html2canvas(cardElement, {
+                scale: 3, 
+                backgroundColor: "#080808", // 确保截图背景是纯黑
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${fileName}_致富报告.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
